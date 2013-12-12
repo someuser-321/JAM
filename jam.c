@@ -6,7 +6,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "noise.c"
+#include "noise.c"  // I'll do a Makefile soon enough...
 
 
 #define WINDOW_WIDTH 640
@@ -14,7 +14,7 @@
 
 #define FXAA_SAMPLES 4
 
-#define PI (3.14159265358979323846)
+//#define PI (3.14159265358979323846)
 #define DEG2RAD(x) ((x/180.0f)*PI)
 #define DSIN(x) (sin(DEG2RAD(x)))
 #define DCOS(x) (cos(DEG2RAD(x)))
@@ -26,12 +26,12 @@
 #define TURN_SPEED 120.0f       // degrees/sec
 #define MOUSE_SENSITIVITY 0.05f
 
-#define PERLIN_SIZE 64
+#define PERLIN_SIZE 64+2
 #define PERLIN_SEED 42
 #define PERLIN_OCTAVES 8
 #define PERLIN_PERSISTENCE 0.5f
 
-#define MAX_HEIGHT 32.0f
+#define MAX_HEIGHT 64.0f
 
 
 GLFWwindow *window;
@@ -55,6 +55,8 @@ int perlin_seed = PERLIN_SEED;
 int perlin_size = PERLIN_SIZE;
 float perlin_persistence = PERLIN_PERSISTENCE;
 
+float maxHeight = MAX_HEIGHT;
+
 
 void setup();
 void render_setup();
@@ -76,8 +78,9 @@ int main(int argc, char *argv[])
 {
     int windowWidth = WINDOW_WIDTH;
     int windowHeight = WINDOW_HEIGHT;
-    if ( argc >= 3 )
-    {
+    maxHeight = MAX_HEIGHT;
+    
+    if ( argc >= 3 ) {
         windowWidth = atoi(argv[1]);
         windowHeight = atoi(argv[2]);
     }
@@ -87,13 +90,16 @@ int main(int argc, char *argv[])
         fxaa_samples = atoi(argv[3]);
     
     if ( argc >= 5 )
-        perlin_size = atoi(argv[4]);
+        perlin_size = atoi(argv[4]) + 2;
 
     if ( argc >= 6 )
         perlin_persistence = atof(argv[5]);
     
-    if (argc >= 7 ) {
-        perlin_seed = atoi(argv[6]);
+    if ( argc >= 7 )
+        maxHeight = atof(argv[6]);
+    
+    if ( argc >= 8 ) {
+        perlin_seed = atoi(argv[7]);
     } else {
         srand((int)time(NULL));
         perlin_seed = rand();
@@ -291,16 +297,16 @@ void render()
             for ( int j=1 ; j<perlin_size-1 ; j++ ) {
                 float n = noiseMap[i*perlin_size + j];
                 float c = n;
-                float lowest = fmin(n, noiseMap[i    *perlin_size + j+1]);
+                float lowest = fmin(999.0f, noiseMap[i    *perlin_size + j+1]);
                       lowest = fmin(lowest, noiseMap[i    *perlin_size + j-1]);
                       lowest = fmin(lowest, noiseMap[(i+1)*perlin_size + j  ]);
                       lowest = fmin(lowest, noiseMap[(i-1)*perlin_size + j  ]);
-                
-                n *= MAX_HEIGHT;
-                lowest *= MAX_HEIGHT;
-                for ( int k=n ; k>=lowest-1 ; k-- ) {
-                    drawCube(i-perlin_size/2, k, j-perlin_size/2, c, c, c);
-                }
+
+                lowest = floor(lowest*maxHeight);
+                int k = (int)floor(n*maxHeight);
+                do {
+                    drawCube(i-perlin_size/2, k--, j-perlin_size/2, c, c, c);
+                } while ( k>lowest );
             }
         }
 
@@ -317,7 +323,6 @@ void render()
 void cleanup()
 {
     free(noiseMap);
-    
     glfwTerminate();
 }
 
@@ -328,7 +333,7 @@ void error_callback(int error, const char *description)
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
-    glViewport(0, 0, width, height);
+    render_setup();
 }
 
 double getFPS()
@@ -388,7 +393,7 @@ void drawCube(int x, int y, int z, float r, float g, float b)
 
     glEnd();
 
-    /*glColor3f(0.0f, 0.0f, 0.0f);
+    glColor3f(0.0f, 0.0f, 0.0f);
     glLineWidth(1.0f);
 
     glBegin(GL_LINES);
@@ -429,7 +434,7 @@ void drawCube(int x, int y, int z, float r, float g, float b)
         glVertex3f(-0.5f,  0.5f, -0.5f);
         glVertex3f(-0.5f,  0.5f,  0.5f);
 
-    glEnd();*/
+    glEnd();
 
     glPopMatrix();
 }

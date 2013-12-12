@@ -62,17 +62,16 @@ float *fractalNoise(int size, int seed, int octaves, float persistence)
     
     float amplitude = 1.0f;
     float totalAmplitude = 0.0f;
+    float *baseNoise = noise(size, seed);
     
     for ( int octave=octaves-1 ; octave>=0 ; octave-- )
     {
         amplitude *= persistence;
         totalAmplitude += amplitude;
         
-        float *baseNoise = noise(size, seed);       
         float *tempNoise = smoothNoise(baseNoise, size, octave);
-        free(baseNoise);
         
-        for ( int x=0 ; x<size ; x++ ){
+        for ( int x=0 ; x<size ; x++ ) {
             for ( int y=0 ; y<size ; y++ ) {
                 fractalNoise[x*size + y] += tempNoise[x*size + y] * amplitude;
             }
@@ -80,6 +79,8 @@ float *fractalNoise(int size, int seed, int octaves, float persistence)
         
         free(tempNoise);
     }
+    
+    free(baseNoise);
     
     float minValue = fractalNoise[0];
     float maxValue = fractalNoise[0];
@@ -94,7 +95,7 @@ float *fractalNoise(int size, int seed, int octaves, float persistence)
     
     for ( int x=0 ; x<size ; x++ ) {
         for ( int y=0 ; y<size ; y++ ) {
-            fractalNoise[x*size + y] = scale((fractalNoise[x*size + y] - minValue) / (maxValue - minValue));
+            fractalNoise[x*size + y] = scale(((fractalNoise[x*size + y]) - minValue) / (maxValue - minValue));
         }
     }
     
